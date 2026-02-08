@@ -1,6 +1,7 @@
 from typing import Dict, Any
 from pydantic import BaseModel
-from ..services.mcp_server import mcp_server
+from ..services.task_service import TaskService
+from ..models.task import TaskCreate
 
 
 class AddTaskParams(BaseModel):
@@ -10,7 +11,7 @@ class AddTaskParams(BaseModel):
     description: str = ""
 
 
-async def add_task(params: Dict[str, Any]) -> Dict[str, Any]:
+async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Add a new task.
 
@@ -20,9 +21,26 @@ async def add_task(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with task_id, status, and title
     """
-    result = await mcp_server.handle_call("add_task", params)
+    try:
+        # Validate parameters
+        validated = AddTaskParams(**params)
 
-    if not result.success:
-        raise Exception(result.error)
+        # Create task using TaskService
+        task_data = TaskCreate(
+            user_id=validated.user_id,
+            title=validated.title,
+            description=validated.description
+        )
 
-    return result.data
+        result = TaskService.create_task(task_data)
+
+        return {
+            "task_id": result.id,
+            "status": "created",
+            "title": result.title
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }

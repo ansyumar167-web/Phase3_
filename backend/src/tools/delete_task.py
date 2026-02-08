@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from pydantic import BaseModel
-from ..services.mcp_server import mcp_server
+from ..services.task_service import TaskService
 
 
 class DeleteTaskParams(BaseModel):
@@ -9,7 +9,7 @@ class DeleteTaskParams(BaseModel):
     task_id: int
 
 
-async def delete_task(params: Dict[str, Any]) -> Dict[str, Any]:
+async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Delete a task.
 
@@ -19,9 +19,20 @@ async def delete_task(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with task_id, status, and title
     """
-    result = await mcp_server.handle_call("delete_task", params)
+    try:
+        # Validate parameters
+        validated = DeleteTaskParams(**params)
 
-    if not result.success:
-        raise Exception(result.error)
+        # Delete task using TaskService
+        result = TaskService.delete_task(validated.user_id, validated.task_id)
 
-    return result.data
+        return {
+            "task_id": result.id,
+            "status": "deleted",
+            "title": result.title
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }

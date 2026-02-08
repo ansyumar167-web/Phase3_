@@ -1,6 +1,6 @@
 from typing import Dict, Any, List
 from pydantic import BaseModel
-from ..services.mcp_server import mcp_server
+from ..services.task_service import TaskService
 
 
 class ListTasksParams(BaseModel):
@@ -9,7 +9,7 @@ class ListTasksParams(BaseModel):
     status: str = "all"  # all, pending, completed
 
 
-async def list_tasks(params: Dict[str, Any]) -> List[Dict[str, Any]]:
+async def execute(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     """
     List tasks for a user.
 
@@ -19,9 +19,23 @@ async def list_tasks(params: Dict[str, Any]) -> List[Dict[str, Any]]:
     Returns:
         List of task dictionaries
     """
-    result = await mcp_server.handle_call("list_tasks", params)
+    try:
+        # Validate parameters
+        validated = ListTasksParams(**params)
 
-    if not result.success:
-        raise Exception(result.error)
+        # Get tasks using TaskService
+        tasks = TaskService.get_tasks(validated.user_id, validated.status)
 
-    return result.data
+        # Convert to dictionary format
+        return [
+            {
+                "id": task.id,
+                "user_id": task.user_id,
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed
+            }
+            for task in tasks
+        ]
+    except Exception as e:
+        return [{"error": str(e)}]

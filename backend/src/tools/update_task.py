@@ -1,17 +1,18 @@
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from pydantic import BaseModel
-from ..services.mcp_server import mcp_server
+from ..services.task_service import TaskService
+from ..models.task import TaskUpdate
 
 
 class UpdateTaskParams(BaseModel):
     """Parameters for update_task tool."""
     user_id: str
     task_id: int
-    title: str = None
-    description: str = None
+    title: Optional[str] = None
+    description: Optional[str] = None
 
 
-async def update_task(params: Dict[str, Any]) -> Dict[str, Any]:
+async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Update a task.
 
@@ -21,9 +22,26 @@ async def update_task(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with task_id, status, and title
     """
-    result = await mcp_server.handle_call("update_task", params)
+    try:
+        # Validate parameters
+        validated = UpdateTaskParams(**params)
 
-    if not result.success:
-        raise Exception(result.error)
+        # Create update data
+        update_data = TaskUpdate(
+            title=validated.title,
+            description=validated.description
+        )
 
-    return result.data
+        # Update task using TaskService
+        result = TaskService.update_task(validated.user_id, validated.task_id, update_data)
+
+        return {
+            "task_id": result.id,
+            "status": "updated",
+            "title": result.title
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }

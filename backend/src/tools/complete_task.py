@@ -1,6 +1,6 @@
 from typing import Dict, Any
 from pydantic import BaseModel
-from ..services.mcp_server import mcp_server
+from ..services.task_service import TaskService
 
 
 class CompleteTaskParams(BaseModel):
@@ -9,7 +9,7 @@ class CompleteTaskParams(BaseModel):
     task_id: int
 
 
-async def complete_task(params: Dict[str, Any]) -> Dict[str, Any]:
+async def execute(params: Dict[str, Any]) -> Dict[str, Any]:
     """
     Mark a task as complete.
 
@@ -19,9 +19,20 @@ async def complete_task(params: Dict[str, Any]) -> Dict[str, Any]:
     Returns:
         Dictionary with task_id, status, and title
     """
-    result = await mcp_server.handle_call("complete_task", params)
+    try:
+        # Validate parameters
+        validated = CompleteTaskParams(**params)
 
-    if not result.success:
-        raise Exception(result.error)
+        # Complete task using TaskService
+        result = TaskService.complete_task(validated.user_id, validated.task_id)
 
-    return result.data
+        return {
+            "task_id": result.id,
+            "status": "completed",
+            "title": result.title
+        }
+    except Exception as e:
+        return {
+            "error": str(e),
+            "status": "failed"
+        }
