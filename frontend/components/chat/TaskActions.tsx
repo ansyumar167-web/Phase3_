@@ -11,12 +11,14 @@ interface TaskActionProps {
 }
 
 const TaskActions = ({ action, taskTitle, onConfirm, onCancel, isPending = false }: TaskActionProps) => {
-  const actionText = {
+  const actionMap: Record<string, string> = {
     add: 'Add',
     complete: 'Complete',
     delete: 'Delete',
     update: 'Update'
-  }[action as keyof typeof actionText] || action;
+  };
+
+  const actionText = actionMap[action] || action;
 
   return (
     <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 my-2">
