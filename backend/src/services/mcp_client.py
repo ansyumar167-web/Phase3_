@@ -1,14 +1,14 @@
 """MCP Client for communicating with the MCP server tools."""
 import asyncio
 from typing import Dict, Any, Optional
-from mcp_use import MCPClient as BaseMCPClient
 from ..config import settings
+from ..tools import add_task, list_tasks, complete_task, delete_task, update_task
 
 
 class MCPClient:
     """
     MCP Client for communicating with the MCP server tools.
-    This class connects to the actual MCP server and makes real tool calls.
+    In production, this directly calls the tool functions instead of using a separate MCP server.
     """
 
     def __init__(self, host: str = None, port: int = None):
@@ -16,34 +16,20 @@ class MCPClient:
         Initialize the MCP client.
 
         Args:
-            host: Host address of the MCP server (defaults to config)
-            port: Port of the MCP server (defaults to config)
+            host: Host address of the MCP server (defaults to config) - not used in direct mode
+            port: Port of the MCP server (defaults to config) - not used in direct mode
         """
         self.host = host or settings.mcp_server_host
         self.port = port or settings.mcp_server_port
-        self.base_client = None
-        self.connected = False
+        self.connected = True  # Always connected in direct mode
 
     async def connect(self):
-        """Connect to the MCP server."""
-        if not self.connected:
-            try:
-                # Create the base MCP client - using correct constructor parameters
-                self.base_client = BaseMCPClient()
-
-                # Connect to the server
-                await self.base_client.connect(f"http://{self.host}:{self.port}")
-                self.connected = True
-                print(f"Connected to MCP server at {self.host}:{self.port}")
-            except Exception as e:
-                print(f"Failed to connect to MCP server: {e}")
-                raise
+        """Connect to the MCP server - no-op in direct mode."""
+        self.connected = True
 
     async def disconnect(self):
-        """Disconnect from the MCP server."""
-        if self.connected and self.base_client:
-            await self.base_client.disconnect()
-            self.connected = False
+        """Disconnect from the MCP server - no-op in direct mode."""
+        self.connected = False
 
     async def call_tool(self, tool_name: str, arguments: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -56,13 +42,20 @@ class MCPClient:
         Returns:
             Result from the tool call
         """
-        if not self.connected:
-            await self.connect()
-
         try:
-            # Call the tool via the MCP protocol
-            result = await self.base_client.call_tool(tool_name, arguments)
-            return result
+            # Direct tool mapping - call the actual tool functions
+            if tool_name == "add_task":
+                return await add_task.execute(arguments)
+            elif tool_name == "list_tasks":
+                return await list_tasks.execute(arguments)
+            elif tool_name == "complete_task":
+                return await complete_task.execute(arguments)
+            elif tool_name == "delete_task":
+                return await delete_task.execute(arguments)
+            elif tool_name == "update_task":
+                return await update_task.execute(arguments)
+            else:
+                return {"error": f"Unknown tool: {tool_name}"}
         except Exception as e:
             return {"error": str(e)}
 
