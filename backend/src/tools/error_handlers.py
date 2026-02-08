@@ -1,5 +1,4 @@
 from typing import Dict, Any
-from ..services.mcp_server import mcp_server
 
 
 class ErrorHandler:
