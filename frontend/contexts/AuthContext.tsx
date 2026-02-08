@@ -10,6 +10,11 @@ interface User {
   username: string;
 }
 
+interface LoginResponse {
+  user: User;
+  access_token: string;
+}
+
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<boolean>;
@@ -50,7 +55,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = await publicRequest('/api/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-      });
+      }) as LoginResponse;
 
       setUser(userData.user);
       // Store complete auth data (including token) for authenticated requests
