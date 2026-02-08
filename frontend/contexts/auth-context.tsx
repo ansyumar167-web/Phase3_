@@ -58,7 +58,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const data = await publicRequest('/api/login', {
         method: 'POST',
         body: JSON.stringify({ email, password }),
-      });
+      }) as AuthResponse;
 
       // Store complete auth data (including token) in localStorage and update context
       localStorage.setItem('user', JSON.stringify(data));
