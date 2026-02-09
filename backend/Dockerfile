@@ -1,31 +1,22 @@
-# Use Python 3.11 slim image
+# Dockerfile for the Python backend
+
+# Use an official Python runtime as a parent image
 FROM python:3.11-slim
 
-# Set working directory
+# Set the working directory in the container
 WORKDIR /app
 
-# Set environment variables
-ENV PYTHONUNBUFFERED=1 \
-    PYTHONDONTWRITEBYTECODE=1 \
-    PORT=8000
-
-# Install system dependencies
-RUN apt-get update && apt-get install -y \
-    gcc \
-    postgresql-client \
-    && rm -rf /var/lib/apt/lists/*
-
-# Copy requirements file
+# Copy the dependencies file to the working directory
 COPY requirements.txt .
 
-# Install Python dependencies
+# Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy application code
+# Copy the rest of the application source code
 COPY . .
 
-# Expose port
+# Make port 8000 available to the world outside this container
 EXPOSE 8000
 
-# Run the application
+# Run main.py when the container launches
 CMD ["python", "main.py"]
